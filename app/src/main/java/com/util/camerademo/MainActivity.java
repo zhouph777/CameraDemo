@@ -17,7 +17,6 @@ public class MainActivity extends AppCompatActivity {
     String[] permissions = new String[]{
             Manifest.permission.CAMERA   //相机权限
     };
-    String[] missingPermissions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,17 +46,19 @@ public class MainActivity extends AppCompatActivity {
             if (ContextCompat.checkSelfPermission(MainActivity.this, permissions[i]) == PackageManager.PERMISSION_GRANTED) {
                 startCameraFragment();
             } else {
-                missingPermissions[i] = permissions[i];
+                ActivityCompat.requestPermissions(MainActivity.this, permissions, 200);
+
             }
         }
-        if (missingPermissions.length != 0) {
-            ActivityCompat.requestPermissions(MainActivity.this, missingPermissions, 200);
-        }
+
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
+        if (requestCode == 200){
+            startCameraFragment();
+        }
     }
 }

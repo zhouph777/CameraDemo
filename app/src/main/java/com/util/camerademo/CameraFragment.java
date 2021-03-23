@@ -2,8 +2,13 @@ package com.util.camerademo;
 
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -11,13 +16,16 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 
+import android.util.Size;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.io.File;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 
 /**
  * 相机控制Fragment
@@ -43,7 +51,7 @@ public class CameraFragment extends Fragment {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
 
-                bindPreview(cameraProvider);
+                bindPreview(view,cameraProvider);
             } catch (ExecutionException | InterruptedException e) {
                 // No errors need to be handled for this Future.
                 // This should never be reached.
@@ -55,9 +63,14 @@ public class CameraFragment extends Fragment {
 
     /**
      * 选择相机并绑定生命周期和实例
+     *
      * @param cameraProvider
      */
-    private void bindPreview(ProcessCameraProvider cameraProvider) {
+
+    ImageAnalysis imageAnalysis;
+    ImageCapture imageCapture;
+
+    private void bindPreview(View view, ProcessCameraProvider cameraProvider) {
         Preview preview = new Preview
                 .Builder()
                 .build();
@@ -67,9 +80,50 @@ public class CameraFragment extends Fragment {
                 .build();
 
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
+
+        imageAnalysis =
+                new ImageAnalysis.Builder()
+                        .setTargetResolution(new Size(1280, 720))
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build();
+
+        imageCapture =
+                new ImageCapture.Builder()
+                        .setTargetRotation(view.getDisplay().getRotation())
+                        .build();
+
         cameraProvider.unbindAll();  //绑定前解除所有绑定,防止cameraProvider绑定Lifecycle发生异常
-        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview);
+        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis, imageCapture, preview);
     }
 
+    private void startAn() {
+        imageAnalysis.setAnalyzer(executor, new ImageAnalysis.Analyzer() {
+            @Override
+            public void analyze(@NonNull ImageProxy image) {
+                int rotationDegrees = image.getImageInfo().getRotationDegrees();
+
+            }
+        });
+    }
+
+    Executor executor;
+
+    private void takePicture() {
+        ImageCapture.OutputFileOptions outputFileOptions =
+                new ImageCapture.OutputFileOptions.Builder(new File("保存路径")).build();
+
+        imageCapture.takePicture(outputFileOptions, executor,
+                new ImageCapture.OnImageSavedCallback() {
+                    @Override
+                    public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+
+                    }
+
+                    @Override
+                    public void onError(@NonNull ImageCaptureException exception) {
+
+                    }
+                });
+    }
 
 }
