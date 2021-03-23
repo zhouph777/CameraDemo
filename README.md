@@ -1,2 +1,2 @@
 # CameraDemo
-A CameraX Demo 
+CameraX Demo 
