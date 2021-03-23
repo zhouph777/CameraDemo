@@ -16,10 +16,12 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 
+import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -106,22 +108,23 @@ public class CameraFragment extends Fragment {
         });
     }
 
-    Executor executor;
+    Executor executor ;
 
-    private void takePicture() {
+    public void takePicture() {
+        Log.i("CameraX","保存成功");
         ImageCapture.OutputFileOptions outputFileOptions =
-                new ImageCapture.OutputFileOptions.Builder(new File("保存路径")).build();
+                new ImageCapture.OutputFileOptions.Builder(new File("test.jpg")).build();
 
         imageCapture.takePicture(outputFileOptions, executor,
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-
+                        Log.i("CameraX","保存成功");
                     }
 
                     @Override
                     public void onError(@NonNull ImageCaptureException exception) {
-
+                        Log.i("CameraX","保存失败");
                     }
                 });
     }

@@ -10,9 +10,10 @@ import androidx.fragment.app.FragmentTransaction;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.FrameLayout;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     String[] permissions = new String[]{
             Manifest.permission.CAMERA   //相机权限
@@ -23,13 +24,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         checkPermissions(permissions);
+
+        findViewById(R.id.takePicture).setOnClickListener(this);
     }
 
     /**
      * 相机Fragment
      */
+
+    CameraFragment mCameraFragment;
     private void startCameraFragment() {
-        CameraFragment mCameraFragment = new CameraFragment();
+        mCameraFragment = new CameraFragment();
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.add(R.id.frameLayout, mCameraFragment);
@@ -59,6 +64,15 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == 200){
             startCameraFragment();
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()){
+            case R.id.takePicture:
+                mCameraFragment.takePicture();
+                break;
         }
     }
 }
