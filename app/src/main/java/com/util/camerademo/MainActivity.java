@@ -13,26 +13,32 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     String[] permissions = new String[]{
-            Manifest.permission.CAMERA   //相机权限
+            Manifest.permission.CAMERA,
+            Manifest.permission.READ_EXTERNAL_STORAGE//相机权限
     };
 
+    private final String filePath ="/sdcard/CameraDemo";
+    private String fileName = getSystermTime()+".JPEG";
+    private CameraFragment mCameraFragment;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         checkPermissions(permissions);
-
         findViewById(R.id.takePicture).setOnClickListener(this);
+        SaveFile.createFile(filePath,fileName);
     }
 
     /**
      * 相机Fragment
      */
 
-    CameraFragment mCameraFragment;
     private void startCameraFragment() {
         mCameraFragment = new CameraFragment();
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -75,4 +81,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
     }
+
+    private String getSystermTime(){
+        SimpleDateFormat sdfTwo =new SimpleDateFormat("yyyyMMddHHmmssE", Locale.getDefault());
+        String timeStr = sdfTwo.format(System.currentTimeMillis());
+        return timeStr;
+    }
+
 }

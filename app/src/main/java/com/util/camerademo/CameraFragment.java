@@ -41,6 +41,8 @@ public class CameraFragment extends Fragment {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private PreviewView previewView;
 
+    private File mFile;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -133,7 +135,7 @@ public class CameraFragment extends Fragment {
         Log.i("CameraX","保存成功");
         ImageCapture.OutputFileOptions outputFileOptions =
                 new ImageCapture.OutputFileOptions
-                        .Builder(new File("test.jpg"))
+                        .Builder(mFile)
                         .build();
 
         imageCapture.takePicture(outputFileOptions, threadPoolExecutor,
