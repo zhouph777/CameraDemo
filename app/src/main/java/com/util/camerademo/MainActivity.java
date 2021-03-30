@@ -11,6 +11,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -43,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.selectCamera).setOnClickListener(this);
 
         File folder = new File(Environment.getExternalStorageDirectory()+File.separator+filePath);
+        Log.i("CameraX",Environment.getExternalStorageDirectory()+File.separator+filePath);
         if (!folder.exists()){
             folder.mkdirs();
         }
