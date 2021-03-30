@@ -10,21 +10,27 @@ import androidx.fragment.app.FragmentTransaction;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     String[] permissions = new String[]{
-            Manifest.permission.CAMERA,
-            Manifest.permission.READ_EXTERNAL_STORAGE//相机权限
+            Manifest.permission.CAMERA,//相机权限
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
-    private final String filePath ="/sdcard/CameraDemo";
-    private String fileName = getSystermTime()+".JPEG";
+
+//    private final String filePath =Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator+"CameraX/";
+    private final String filePath ="CameraX"+getSystermTime();
+
+    private String fileName = getSystermTime()+".jpg";
     private CameraFragment mCameraFragment;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +38,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         checkPermissions(permissions);
         findViewById(R.id.takePicture).setOnClickListener(this);
-        SaveFile.createFile(filePath,fileName);
+
+        File folder = new File(Environment.getExternalStorageDirectory()+File.separator+filePath);
+        if (!folder.exists()){
+            folder.mkdirs();
+        }
+
     }
 
     /**
@@ -41,6 +52,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void startCameraFragment() {
         mCameraFragment = new CameraFragment();
+
+        Bundle bundle = new Bundle();
+        bundle.putString("filePath",filePath);
+        bundle.putString("fileName",fileName);
+        mCameraFragment.setArguments(bundle);
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.add(R.id.frameLayout, mCameraFragment);
@@ -82,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private String getSystermTime(){
-        SimpleDateFormat sdfTwo =new SimpleDateFormat("yyyyMMddHHmmssE", Locale.getDefault());
+        SimpleDateFormat sdfTwo =new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
         String timeStr = sdfTwo.format(System.currentTimeMillis());
         return timeStr;
     }

@@ -2,6 +2,7 @@ package com.util.camerademo;
 
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
@@ -9,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
@@ -26,11 +28,16 @@ import androidx.lifecycle.LifecycleOwner;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static android.os.Environment.DIRECTORY_PICTURES;
+import static android.os.Environment.MEDIA_MOUNTED;
 
 /**
  * 相机控制Fragment
@@ -40,8 +47,33 @@ public class CameraFragment extends Fragment {
 
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private PreviewView previewView;
+    private String filePath;
+    private String fileName;
+    private File file;
 
-    private File mFile;
+
+
+    /**
+     * 创建一个线程池
+     * 2个线程
+     * 最大3个线程
+     * 空闲线程等待时间为0
+     * Unit单位
+     * 队列
+     */
+    ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
+            2, 3, 0,
+            TimeUnit.MILLISECONDS,
+            new LinkedBlockingDeque<>(2));
+
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+       Bundle bundle = getArguments();
+        filePath =  bundle.getString("filePath");
+        fileName = bundle.getString("fileName");
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -50,8 +82,15 @@ public class CameraFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_camera, container, false);
 
         previewView = view.findViewById(R.id.previewView);
-
         cameraProviderFuture = ProcessCameraProvider.getInstance(view.getContext()); //获取cameraProvider
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+
+//            file  = new File(Environment.getExternalStorageDirectory(), "CameraX/"+getSystermTime() + ".jpg");
+            file  = new File(Environment.getExternalStorageDirectory(), filePath+"/"+fileName);
+
+            boolean bool = MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
+        }
 
         //检查检查 CameraProvider 可用性
         cameraProviderFuture.addListener(() -> {
@@ -91,11 +130,11 @@ public class CameraFragment extends Fragment {
 
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-//        imageAnalysis =
-//                new ImageAnalysis.Builder()
-//                        .setTargetResolution(new Size(1280, 720))
-//                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-//                        .build();
+        imageAnalysis =
+                new ImageAnalysis.Builder()
+                        .setTargetResolution(new Size(1280, 720))
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build();
 
         imageCapture =
                 new ImageCapture.Builder()
@@ -103,39 +142,29 @@ public class CameraFragment extends Fragment {
                         .build();
 
         cameraProvider.unbindAll();  //绑定前解除所有绑定,防止cameraProvider绑定Lifecycle发生异常
-        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageCapture, preview);
+        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis,imageCapture, preview);
     }
 
-//    private void startAn() {
-//        imageAnalysis.setAnalyzer(executor, new ImageAnalysis.Analyzer() {
-//            @Override
-//            public void analyze(@NonNull ImageProxy image) {
-//                int rotationDegrees = image.getImageInfo().getRotationDegrees();
-//
-//            }
-//        });
-//    }
+    private void startAn() {
+        imageAnalysis.setAnalyzer(threadPoolExecutor, new ImageAnalysis.Analyzer() {
+            @Override
+            public void analyze(@NonNull ImageProxy image) {
+                int rotationDegrees = image.getImageInfo().getRotationDegrees();
+
+
+            }
+        });
+    }
 
 
     /**
-     * 创建一个线程池
-     * 2个线程
-     * 最大3个线程
-     * 空闲线程等待时间为0
-     * Unit单位
-     * 队列
+     * 拍照
      */
-    ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
-            2, 3, 0,
-            TimeUnit.MILLISECONDS,
-            new LinkedBlockingDeque<>(2));
-
-
     public void takePicture() {
-        Log.i("CameraX","保存成功");
+        Log.i("CameraX",file.getPath());
         ImageCapture.OutputFileOptions outputFileOptions =
                 new ImageCapture.OutputFileOptions
-                        .Builder(mFile)
+                        .Builder(file)
                         .build();
 
         imageCapture.takePicture(outputFileOptions, threadPoolExecutor,
@@ -147,9 +176,15 @@ public class CameraFragment extends Fragment {
 
                     @Override
                     public void onError(@NonNull ImageCaptureException exception) {
-                        Log.i("CameraX","保存失败");
+                        Log.i("CameraX","保存失败:"+exception);
                     }
                 });
     }
 
+
+    private String getSystermTime(){
+        SimpleDateFormat sdfTwo =new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+        String timeStr = sdfTwo.format(System.currentTimeMillis());
+        return timeStr;
+    }
 }
