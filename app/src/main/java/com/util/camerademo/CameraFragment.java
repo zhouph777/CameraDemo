@@ -51,7 +51,11 @@ public class CameraFragment extends Fragment {
     private String fileName;
     private File file;
 
+    private ImageAnalysis imageAnalysis;
+    private ImageCapture imageCapture;
+    private boolean switchCamera = false;
 
+    private int cameraID = CameraSelector.LENS_FACING_BACK;
 
     /**
      * 创建一个线程池
@@ -70,9 +74,10 @@ public class CameraFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-       Bundle bundle = getArguments();
-        filePath =  bundle.getString("filePath");
+        Bundle bundle = getArguments();
+        filePath = bundle.getString("filePath");
         fileName = bundle.getString("fileName");
+        switchCamera = bundle.getBoolean("switchCamera");
     }
 
     @Override
@@ -85,28 +90,33 @@ public class CameraFragment extends Fragment {
         cameraProviderFuture = ProcessCameraProvider.getInstance(view.getContext()); //获取cameraProvider
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-
-//            file  = new File(Environment.getExternalStorageDirectory(), "CameraX/"+getSystermTime() + ".jpg");
-            file  = new File(Environment.getExternalStorageDirectory(), filePath+"/"+fileName);
-
-            boolean bool = MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
+            file = new File(Environment.getExternalStorageDirectory(), filePath + "/" + fileName);
         }
 
+        initCamera(view);
+        return view;
+    }
+
+
+    /**
+     * 初始化相机 绑定Preview
+     *
+     * @param view
+     */
+    private void initCamera(View view) {
         //检查检查 CameraProvider 可用性
         cameraProviderFuture.addListener(() -> {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    bindPreview(view,cameraProvider);
+                    bindPreview(view, cameraProvider);
                 }
             } catch (ExecutionException | InterruptedException e) {
                 // No errors need to be handled for this Future.
                 // This should never be reached.
             }
         }, ContextCompat.getMainExecutor(view.getContext()));
-
-        return view;
     }
 
     /**
@@ -114,10 +124,6 @@ public class CameraFragment extends Fragment {
      *
      * @param cameraProvider
      */
-
-    ImageAnalysis imageAnalysis;
-    ImageCapture imageCapture;
-
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void bindPreview(View view, ProcessCameraProvider cameraProvider) {
         Preview preview = new Preview
@@ -125,7 +131,7 @@ public class CameraFragment extends Fragment {
                 .build();
 
         CameraSelector cameraSelector = new CameraSelector.Builder()
-                .requireLensFacing(CameraSelector.LENS_FACING_BACK) //前后镜头设置  0：前镜头 1：后镜头
+                .requireLensFacing(cameraID)
                 .build();
 
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
@@ -142,9 +148,12 @@ public class CameraFragment extends Fragment {
                         .build();
 
         cameraProvider.unbindAll();  //绑定前解除所有绑定,防止cameraProvider绑定Lifecycle发生异常
-        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis,imageCapture, preview);
+        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, imageAnalysis, imageCapture, preview);
     }
 
+    /**
+     * 图片分析
+     */
     private void startAn() {
         imageAnalysis.setAnalyzer(threadPoolExecutor, new ImageAnalysis.Analyzer() {
             @Override
@@ -156,12 +165,31 @@ public class CameraFragment extends Fragment {
         });
     }
 
+    /**
+     * 切换相机ID
+     *
+     * @return
+     */
+    private int switchCamera() {
+
+        switch (cameraID){
+            case CameraSelector.LENS_FACING_BACK:
+                cameraID = CameraSelector.LENS_FACING_FRONT;
+                break;
+            case CameraSelector.LENS_FACING_FRONT:
+                cameraID = CameraSelector.LENS_FACING_BACK;
+                break;
+        }
+
+        return cameraID;
+    }
+
 
     /**
      * 拍照
      */
     public void takePicture() {
-        Log.i("CameraX",file.getPath());
+        Log.i("CameraX", file.getPath());
         ImageCapture.OutputFileOptions outputFileOptions =
                 new ImageCapture.OutputFileOptions
                         .Builder(file)
@@ -171,20 +199,14 @@ public class CameraFragment extends Fragment {
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
                     public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                        Log.i("CameraX","保存成功");
+                        Log.i("CameraX", "保存成功");
                     }
 
                     @Override
                     public void onError(@NonNull ImageCaptureException exception) {
-                        Log.i("CameraX","保存失败:"+exception);
+                        Log.i("CameraX", "保存失败:" + exception);
                     }
                 });
     }
 
-
-    private String getSystermTime(){
-        SimpleDateFormat sdfTwo =new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
-        String timeStr = sdfTwo.format(System.currentTimeMillis());
-        return timeStr;
-    }
 }

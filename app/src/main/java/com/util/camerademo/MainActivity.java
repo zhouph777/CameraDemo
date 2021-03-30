@@ -27,6 +27,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     };
 
 
+
+    private Bundle bundle;
 //    private final String filePath =Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator+"CameraX/";
     private final String filePath ="CameraX"+getSystermTime();
 
@@ -38,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         checkPermissions(permissions);
         findViewById(R.id.takePicture).setOnClickListener(this);
+        findViewById(R.id.selectCamera).setOnClickListener(this);
 
         File folder = new File(Environment.getExternalStorageDirectory()+File.separator+filePath);
         if (!folder.exists()){
@@ -53,9 +56,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void startCameraFragment() {
         mCameraFragment = new CameraFragment();
 
-        Bundle bundle = new Bundle();
+        bundle = new Bundle();
         bundle.putString("filePath",filePath);
         bundle.putString("fileName",fileName);
+        bundle.putBoolean("switchCamera",false);
         mCameraFragment.setArguments(bundle);
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
@@ -93,6 +97,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()){
             case R.id.takePicture:
                 mCameraFragment.takePicture();
+                break;
+            case R.id.selectCamera:
+                bundle.putBoolean("switchCamera",true);
                 break;
         }
     }
